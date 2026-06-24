@@ -1,0 +1,83 @@
+/* Basic Emarald Examples */
+
+// Example 1: Simple arithmetic
+print("=== Arithmetic ===")
+a = 10
+b = 3
+print(f"${a} + ${b} = ${a + b}")
+print(f"${a} - ${b} = ${a - b}")
+print(f"${a} * ${b} = ${a * b}")
+print(f"${a} / ${b} = ${a / b}")
+print(f"${a} % ${b} = ${a % b}")
+print(f"${a} ** ${b} = ${a ** b}")
+
+// Example 2: String operations
+print("\n=== Strings ===")
+name = "Emarald"
+print(f"Hello, {name}!")
+print(name.upper())
+print(name.lower())
+print(f"Length: {len(name)}")
+print(f"Contains 'ral': {name.contains('ral')}")
+
+// Example 3: Collections
+print("\n=== Collections ===")
+numbers = [1, 2, 3, 4, 5]
+print(f"Array: {numbers}")
+print(f"First: {numbers[0]}, Last: {numbers[4]}")
+print(f"Length: {len(numbers)}")
+
+dict_data = {name: "Alice", age: 30, city: "NYC"}
+print(f"Dictionary: {dict_data}")
+print(f"Name: {dict_data['name']}, Age: {dict_data['age']}")
+
+// Example 4: Conditionals
+print("\n=== Conditionals ===")
+x = 15
+if x < 10:
+    print("x is less than 10")
+elif x < 20:
+    print("x is between 10 and 20")
+else:
+    print("x is 20 or more")
+
+// Example 5: Loops
+print("\n=== Loops ===")
+print("For loop:")
+for i in range(5):
+    print(i)
+
+print("\nWhile loop:")
+count = 0
+while count < 3:
+    print(count)
+    count = count + 1
+
+print("\nIteration:")
+for item in numbers:
+    print(item * 2)
+
+// Example 6: Functions
+print("\n=== Functions ===")
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+print(greet("Emarald"))
+
+def factorial(n: i32) -> i32:
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+print(f"5! = {factorial(5)}")
+
+// Example 7: Comprehensions
+print("\n=== Comprehensions ===")
+squares = [x * x for x in range(10)]
+print(f"Squares: {squares}")
+
+evens = [x for x in range(20) if x % 2 == 0]
+print(f"Even numbers: {evens}")
+
+word_lengths = {word: len(word) for word in ["apple", "banana", "cherry"]}
+print(f"Word lengths: {word_lengths}")

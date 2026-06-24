@@ -1,0 +1,12 @@
+// User-created Emarald library: mathlib.ed
+
+export const PI = 3.141592653589793
+
+export def sqrt(x: f64) -> f64:
+    return x ** 0.5
+
+export def add(a: i32, b: i32) -> i32:
+    return a + b
+
+export def circle_area(radius: f64) -> f64:
+    return PI * radius * radius

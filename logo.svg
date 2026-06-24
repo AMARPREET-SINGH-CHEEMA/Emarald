@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#f5f5f5"/>
+  
+  <!-- Simplified emerald gem shape -->
+  <defs>
+    <linearGradient id="gemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ade80;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#15803d;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Simple diamond/gem shape -->
+  <polygon points="100,20 160,100 100,180 40,100" fill="url(#gemGrad)" stroke="#065f46" stroke-width="2"/>
+  
+  <!-- Inner shine -->
+  <polygon points="100,20 130,80 100,140 70,80" fill="#86efac" opacity="0.3"/>
+  
+  <!-- Centered "E" -->
+  <text x="100" y="115" font-family="Arial, sans-serif" font-size="60" font-weight="bold" 
+        text-anchor="middle" fill="#ffffff" opacity="0.9">E</text>
+</svg>

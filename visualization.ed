@@ -1,0 +1,160 @@
+/* Data Visualization Examples */
+
+use visual
+use math
+
+print("=== Data Visualization Examples ===\n")
+
+// Example 1: Simple line plot
+print("Generating line plot...")
+data = [10, 15, 13, 17, 20, 22, 25, 23, 24]
+plot(data, 
+    title: "Sales Trend",
+    ylabel: "Amount ($)",
+    color: "blue",
+    marker: "o"
+)
+save_plot("plot_line.png", dpi: 300)
+print("✓ Saved plot_line.png\n")
+
+// Example 2: Scatter plot
+print("Generating scatter plot...")
+x_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+y_values = [x * 2 + math.random() * 5 for x in x_values]
+
+scatter(x_values, y_values,
+    title: "Correlation Analysis",
+    xlabel: "X Values",
+    ylabel: "Y Values",
+    color: "red",
+    size: 50
+)
+save_plot("plot_scatter.png", dpi: 300)
+print("✓ Saved plot_scatter.png\n")
+
+// Example 3: Histogram
+print("Generating histogram...")
+measurements = [95, 102, 98, 107, 100, 99, 104, 96, 101, 103, 
+                98, 105, 99, 102, 100, 97, 103, 101, 99, 104]
+
+histogram(measurements,
+    title: "Distribution of Measurements",
+    xlabel: "Value",
+    ylabel: "Frequency",
+    bins: 10,
+    color: "green"
+)
+save_plot("plot_histogram.png", dpi: 300)
+print("✓ Saved plot_histogram.png\n")
+
+// Example 4: Bar chart
+print("Generating bar chart...")
+categories = ["Q1", "Q2", "Q3", "Q4"]
+values = [150, 200, 180, 220]
+
+bar(categories, values,
+    title: "Quarterly Revenue",
+    xlabel: "Quarter",
+    ylabel: "Revenue ($)",
+    color: "purple"
+)
+save_plot("plot_bar.png", dpi: 300)
+print("✓ Saved plot_bar.png\n")
+
+// Example 5: Multiple plots (subplot)
+print("Generating multi-plot visualization...")
+subplot(2, 2)
+
+// Plot 1: Line
+plot([10, 20, 15, 25, 30], title: "Sales")
+
+// Plot 2: Scatter
+scatter([1, 2, 3, 4, 5], [2, 4, 5, 4, 6], title: "Points")
+
+// Plot 3: Histogram
+histogram([95, 98, 100, 102, 105, 98, 101], title: "Distribution", bins: 5)
+
+// Plot 4: Bar
+bar(["A", "B", "C"], [10, 20, 15], title: "Categories")
+
+save_plot("plot_multi.png", dpi: 300)
+print("✓ Saved plot_multi.png\n")
+
+// Example 6: Customized line plot with multiple series
+print("Generating multi-series plot...")
+series_a = [10, 12, 11, 13, 15, 14, 16]
+series_b = [8, 10, 12, 11, 13, 15, 14]
+series_c = [15, 13, 14, 16, 17, 16, 18]
+
+plot(series_a, label: "Series A", color: "blue", marker: "o")
+plot(series_b, label: "Series B", color: "red", marker: "s")
+plot(series_c, label: "Series C", color: "green", marker: "^")
+
+set_title("Multi-Series Comparison")
+set_xlabel("Time Period")
+set_ylabel("Value")
+set_legend(location: "upper left")
+
+save_plot("plot_series.png", dpi: 300)
+print("✓ Saved plot_series.png\n")
+
+// Example 7: 3D visualization
+print("Generating 3D plot...")
+x_3d = [x for x in range(10)]
+y_3d = [y for y in range(10)]
+z_3d = [[x * y for x in range(10)] for y in range(10)]
+
+plot_3d(z_3d,
+    title: "3D Surface Plot",
+    xlabel: "X",
+    ylabel: "Y",
+    zlabel: "Z (X*Y)"
+)
+save_plot("plot_3d.png", dpi: 300)
+print("✓ Saved plot_3d.png\n")
+
+// Example 8: Heatmap
+print("Generating heatmap...")
+correlation_matrix = [
+    [1.0, 0.8, 0.3],
+    [0.8, 1.0, 0.5],
+    [0.3, 0.5, 1.0]
+]
+
+heatmap(correlation_matrix,
+    title: "Correlation Matrix",
+    labels: ["Var1", "Var2", "Var3"],
+    cmap: "viridis"
+)
+save_plot("plot_heatmap.png", dpi: 300)
+print("✓ Saved plot_heatmap.png\n")
+
+// Example 9: Box plot
+print("Generating box plot...")
+data_set_1 = [1, 3, 5, 7, 9, 2, 4, 6, 8]
+data_set_2 = [2, 4, 6, 8, 10, 3, 5, 7, 9]
+data_set_3 = [5, 10, 15, 20, 25, 12, 18, 22]
+
+boxplot([data_set_1, data_set_2, data_set_3],
+    labels: ["Group A", "Group B", "Group C"],
+    title: "Distribution Comparison"
+)
+save_plot("plot_box.png", dpi: 300)
+print("✓ Saved plot_box.png\n")
+
+// Example 10: Pie chart
+print("Generating pie chart...")
+sizes = [30, 25, 20, 15, 10]
+labels = ["Category A", "Category B", "Category C", "Category D", "Category E"]
+colors = ["red", "blue", "green", "yellow", "orange"]
+
+pie(sizes,
+    labels: labels,
+    colors: colors,
+    title: "Market Share",
+    autopct: "%.1f%%"
+)
+save_plot("plot_pie.png", dpi: 300)
+print("✓ Saved plot_pie.png\n")
+
+print("All visualizations generated successfully!")

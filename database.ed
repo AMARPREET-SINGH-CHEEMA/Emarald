@@ -1,0 +1,103 @@
+/* Database & SQL Examples */
+
+use db
+use json
+
+// Example 1: Basic database connection and queries
+print("=== Database Queries ===")
+
+db = connect("postgres://localhost/myapp")
+
+// Fetch all users
+users: [{id: i32, name: str, email: str, created_at: str}] = sql {
+    SELECT id, name, email, created_at FROM users
+    USING db
+}
+
+print(f"Total users: {len(users)}")
+for user in users:
+    print(f"{user.id}: {user.name} ({user.email})")
+
+// Example 2: Parameterized queries (SQL injection safe)
+print("\n=== Parameterized Queries ===")
+
+user_id = 42
+user = sql {
+    SELECT id, name, email FROM users WHERE id = ?
+    USING db, (user_id)
+}
+
+if user != nil:
+    print(f"User: {user.name} - {user.email}")
+
+// Example 3: Insert and return results
+print("\n=== Insert Records ===")
+
+new_user_id: i32 = sql {
+    INSERT INTO users (name, email) VALUES (?, ?)
+    RETURNING id
+    USING db, ("Bob Smith", "bob@example.com")
+}
+
+print(f"Created user with ID: {new_user_id}")
+
+// Example 4: Transactions
+print("\n=== Transactions ===")
+
+try:
+    sql {
+        START TRANSACTION
+        
+        UPDATE accounts SET balance = balance - ? WHERE id = ?
+        UPDATE accounts SET balance = balance + ? WHERE id = ?
+        
+        COMMIT
+        USING db, (100, 1, 100, 2)
+    }
+    print("Transaction completed successfully")
+except error:
+    print(f"Transaction failed: {error}")
+    sql {
+        ROLLBACK
+        USING db
+    }
+
+// Example 5: Complex queries with aggregation
+print("\n=== Aggregation ===")
+
+stats: [{category: str, total: f64, count: i32}] = sql {
+    SELECT category, SUM(amount) as total, COUNT(*) as count 
+    FROM transactions 
+    GROUP BY category 
+    ORDER BY total DESC
+    USING db
+}
+
+for stat in stats:
+    avg = stat.total / stat.count
+    print(f"{stat.category}: Total=${stat.total:.2f}, Count={stat.count}, Avg=${avg:.2f}")
+
+// Example 6: JSON export
+print("\n=== Export to JSON ===")
+
+json_data = to_json(users)
+write("users.json", json_data)
+print("Exported to users.json")
+
+// Example 7: Complex join query
+print("\n=== Complex Joins ===")
+
+orders: [{user_name: str, order_date: str, total: f64}] = sql {
+    SELECT 
+        u.name as user_name, 
+        o.order_date, 
+        o.total
+    FROM orders o
+    JOIN users u ON o.user_id = u.id
+    WHERE o.order_date >= DATE('2024-01-01')
+    ORDER BY o.order_date DESC
+    USING db
+}
+
+for order in orders:
+    print(f"{order.user_name}: ${order.total} on {order.order_date}")

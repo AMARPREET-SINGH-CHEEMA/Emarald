@@ -1,0 +1,188 @@
+/* Advanced Emarald Features */
+
+print("=== Advanced Language Features ===\n")
+
+// Example 1: Pattern matching
+print("Pattern Matching:")
+def analyze(score: i32) -> str:
+    return match score:
+        100 -> "Perfect!"
+        90..99 -> "Excellent"
+        80..89 -> "Good"
+        70..79 -> "Satisfactory"
+        60..69 -> "Passing"
+        _ -> "Needs improvement"
+
+for score in [95, 85, 75, 55, 100]:
+    print(f"{score}: {analyze(score)}")
+
+// Example 2: Closures and higher-order functions
+print("\nClosures and Higher-Order Functions:")
+def make_multiplier(factor: i32):
+    return def(x: i32):
+        return x * factor
+
+double = make_multiplier(2)
+triple = make_multiplier(3)
+
+print(f"double(5) = {double(5)}")
+print(f"triple(5) = {triple(5)}")
+
+// Example 3: Map and filter with lambdas
+print("\nMap and Filter:")
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+squared = map(def(x): x * x, numbers)
+print(f"Squared: {squared}")
+
+evens = filter(def(x): x % 2 == 0, numbers)
+print(f"Evens: {evens}")
+
+// Example 4: Error handling with try/catch
+print("\nError Handling:")
+def safe_divide(a: i32, b: i32) -> (i32 | error):
+    if b == 0:
+        return error("Division by zero")
+    return a / b
+
+try:
+    result = safe_divide(10, 0)
+    print(f"Result: {result}")
+except err:
+    print(f"Caught error: {err}")
+
+// Example 5: Optional types
+print("\nOptional Types:")
+user_input: str? = get_user_input()
+
+if user_input != nil:
+    print(f"User entered: {user_input}")
+else:
+    print("No input provided")
+
+
+// Example 6: Union types
+print("\nUnion Types:")
+def get_status() -> (str | i32):
+    randomize()
+    if random() > 0.5:
+        return "success"
+    else:
+        return 200
+
+status = get_status()
+match status:
+    string_val -> print(f"Status: {string_val}")
+    int_val -> print(f"Status code: {int_val}")
+
+// Example 7: Memory annotations
+print("\nMemory Management:")
+
+// Automatic GC
+data = [1, 2, 3, 4, 5]
+print(f"Auto-managed array: {data}")
+
+// Pinned memory (won't be GC'd)
+@pinned
+cache = expensive_operation()
+
+// Manual memory
+@manual
+buffer = alloc(1024)
+fill_buffer(buffer, 1024)
+free(buffer)
+print("Manual memory freed")
+
+// Example 8: Type hints for optimization
+print("\nType-Safe Operations:")
+
+@hot  // Mark as hot code path
+def process_pixels(pixels: [u8]) -> [u8]:
+    result = []
+    
+    @vectorize  # Request SIMD optimization
+    for i in range(len(pixels)):
+        result.push(pixels[i] * 2)
+    
+    return result
+
+test_pixels = [10, 20, 30, 40, 50]
+processed = process_pixels(test_pixels)
+print(f"Processed pixels: {processed}")
+
+// Example 9: Generators and lazy evaluation
+print("\nGenerators:")
+def fibonacci(limit: i32):
+    a, b = 0, 1
+    while a < limit:
+        yield a
+        a, b = b, a + b
+
+print("Fibonacci up to 100:")
+for num in fibonacci(100):
+    print(num, end: " ")
+print()
+
+// Example 10: Destructuring and tuple unpacking
+print("\nTuple Unpacking:")
+
+person: (str, i32, str) = ("Alice", 30, "Engineer")
+name, age, job = person
+print(f"{name} is {age} years old and works as a {job}")
+
+// Multiple assignment
+a, b, c = 10, 20, 30
+print(f"a={a}, b={b}, c={c}")
+
+// Swapping
+x, y = 5, 10
+x, y = y, x
+print(f"After swap: x={x}, y={y}")
+
+// Example 11: Operator overloading for custom types
+print("\nCustom Types:")
+
+class Vector:
+    x: f64
+    y: f64
+    
+    def new(x: f64, y: f64):
+        return Vector { x, y }
+    
+    def add(other: Vector) -> Vector:
+        return Vector { x: this.x + other.x, y: this.y + other.y }
+    
+    def magnitude() -> f64:
+        return sqrt(this.x * this.x + this.y * this.y)
+
+v1 = Vector.new(3, 4)
+v2 = Vector.new(1, 2)
+v3 = v1.add(v2)
+
+print(f"Vector: ({v3.x}, {v3.y})")
+print(f"Magnitude: {v3.magnitude()}")
+
+// Example 12: Enumerations
+print("\nEnumerations:")
+
+enum Color {
+    Red,
+    Green,
+    Blue,
+    Custom(r: u8, g: u8, b: u8)
+}
+
+def color_name(c: Color) -> str:
+    return match c:
+        Color.Red -> "Red"
+        Color.Green -> "Green"
+        Color.Blue -> "Blue"
+        Color.Custom(r, g, b) -> f"RGB({r}, {g}, {b})"
+
+primary = Color.Red
+custom = Color.Custom(255, 128, 64)
+
+print(f"{color_name(primary)}")
+print(f"{color_name(custom)}")
+
+print("\nAll examples completed!")

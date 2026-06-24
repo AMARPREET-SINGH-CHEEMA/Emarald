@@ -1,0 +1,8 @@
+// Example showing how to import and use a user-created library
+
+use mathlib
+
+print(f"PI = {mathlib.PI}")
+print(f"sqrt(9) = {mathlib.sqrt(9.0)}")
+print(f"add(7, 5) = {mathlib.add(7, 5)}")
+print(f"Circle area (r=3): {mathlib.circle_area(3.0)}")
