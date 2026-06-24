@@ -1,6 +1,6 @@
-# 💎 Emarald Programming Language
+#                            Emarald Programming Language
 
-![Emarald Logo](logo.svg)
+                               ![Emarald Logo](logo.svg)
 
 **Emarald** is a high-performance programming language designed to overcome Python's limitations while maintaining its simplicity and elegance. It combines Python's readability with C's performance, built-in SQL support, memory control, and R-inspired data visualization capabilities.
 
@@ -22,7 +22,7 @@
 ### Installation (Build from Source)
 
 ```bash
-cd /Users/kimapo/Desktop/emarald
+cd ./emarald
 gcc -c lexer.c -o lexer.o
 gcc -c vm.c -o vm.o -lm
 gcc lexer.o vm.o -o emarald -lm
@@ -387,7 +387,7 @@ MIT License - See LICENSE file
 
 ## Comparison with Other Languages
 
-```
+
 Feature           | Python | Go   | Rust | Emarald
 Simplicity        | ★★★★★ | ★★★  | ★★   | ★★★★★
 Performance       | ★★    | ★★★★ | ★★★★★| ★★★★
@@ -395,7 +395,7 @@ Memory Control    | ★★    | ★★★  | ★★★★★| ★★★★
 Built-in SQL      | ★     | ★    | ★    | ★★★★★
 Visualization     | ★★★   | ★★   | ★★   | ★★★★★
 Learning Curve    | ★★★★★ | ★★★★ | ★    | ★★★★★
-```
+
 
 ## Getting Started
 
@@ -407,3 +407,4 @@ Learning Curve    | ★★★★★ | ★★★★ | ★    | ★★★★★
 ---
 
 **Made with ❤️ to make programming faster, clearer, and more enjoyable.**
+    Copyright © 2026 Amanpreet Singh Bheema. All rights reserved.
