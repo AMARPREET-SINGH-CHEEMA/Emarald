@@ -1,5 +1,5 @@
 #                            Emarald Programming Language
-!                              [Emarald Logo](logo.svg)
+![Emarald Logo](logo.svg)
 
 **Emarald** is a high-performance programming language designed to overcome Python's limitations while maintaining its simplicity and elegance. It combines Python's readability with C's performance, built-in SQL support, memory control, and R-inspired data visualization capabilities.
 
@@ -406,4 +406,4 @@ Learning Curve    | ★★★★★ | ★★★★ | ★    | ★★★★★
 ---
 
 **Made with ❤️ to make programming faster, clearer, and more enjoyable.**
-    Copyright © 2026 Amanpreet Singh Bheema. All rights reserved.
+    Copyright © 2026 Amanpreet Singh Cheema. All rights reserved.
