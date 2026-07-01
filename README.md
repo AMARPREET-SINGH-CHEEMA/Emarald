@@ -380,10 +380,6 @@ Contributions are welcome! Areas that need work:
 4. **Database Integration** - SQL execution engine
 5. **Visualization** - Graphics backend
 
-## License
-
-MIT License - See LICENSE file
-
 ## Comparison with Other Languages
 
 
