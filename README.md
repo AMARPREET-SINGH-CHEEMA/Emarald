@@ -331,9 +331,9 @@ def fetch_products(category: str) -> [{title: str, price: f64}]:
 - [x] VM implementation
 
 ### Phase 2 (In Progress)
-- [ ] Parser implementation
-- [ ] Bytecode compiler
-- [ ] Error reporting system
+- [x] Parser implementation
+- [x] Bytecode compiler
+- [x] Error reporting system
 
 ### Phase 3 (Future)
 - [ ] SQL integration layer
