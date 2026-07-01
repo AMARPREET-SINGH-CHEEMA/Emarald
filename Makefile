@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O2 -lm
-SOURCES = lexer.c parser.c compiler.c vm.c error.c
+CFLAGS = -Wall -Wextra -O2 -lm -pthread
+SOURCES = lexer.c parser.c compiler.c vm.c error.c sql.c visual.c jit.c db.c parallel.c
 OBJECTS = $(SOURCES:.c=.o)
 TARGET = emarald
 
@@ -11,7 +11,7 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $(TARGET) $(CFLAGS)
 
-%.o: %.c interpreter.h error.h
+%.o: %.c interpreter.h error.h sql.h visual.h jit.h db.h parallel.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
