@@ -343,10 +343,10 @@ def fetch_products(category: str) -> [{title: str, price: f64}]:
 
 ### Phase 4 (Long-term)
 - [x] Parallel execution
-- [ ] GPU support
-- [ ] Package manager (emerpm)
-- [ ] IDE support (VSCode, Vim)
-- [ ] WebAssembly target
+- [x] GPU support (prototype)
+- [x] Package manager (emerpm)
+- [x] IDE support (VSCode, Vim)
+- [x] WebAssembly target (prototype)
 
 ## Performance Tips
 
