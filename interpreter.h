@@ -294,6 +294,10 @@ struct Stmt {
             Stmt* body;
         } func_decl;
         struct {
+            ObjString* name;
+            Stmt* body;
+        } class_decl;
+        struct {
             Expr* condition;
             Stmt* then_branch;
             Stmt* else_branch;

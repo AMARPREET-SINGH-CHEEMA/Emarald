@@ -13,6 +13,8 @@ typedef struct {
     Value* constants;
     size_t constants_capacity;
     size_t constants_len;
+    ObjString* locals[STACK_SIZE];
+    int local_count;
     bool had_error;
 } Compiler;
 
@@ -30,7 +32,7 @@ static void emit_byte(int byte) {
         }
         compiler.bytecode = new_bytecode;
     }
-    
+
     compiler.bytecode[compiler.bytecode_len++] = byte;
 }
 
@@ -64,9 +66,34 @@ static int add_constant(Value val) {
         }
         compiler.constants = new_constants;
     }
-    
+
     compiler.constants[compiler.constants_len++] = val;
     return (int)(compiler.constants_len - 1);
+}
+
+static bool string_equals(ObjString* a, ObjString* b) {
+    if (a == b) return true;
+    if (!a || !b) return false;
+    if (a->length != b->length) return false;
+    return memcmp(a->chars, b->chars, a->length) == 0;
+}
+
+static int resolve_local(ObjString* name) {
+    for (int i = compiler.local_count - 1; i >= 0; i--) {
+        if (string_equals(compiler.locals[i], name)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void add_local(ObjString* name) {
+    if (compiler.local_count >= STACK_SIZE) {
+        fprintf(stderr, "Too many local variables\n");
+        compiler.had_error = true;
+        return;
+    }
+    compiler.locals[compiler.local_count++] = name;
 }
 
 /* Compile binary operation */
@@ -82,10 +109,47 @@ static void compile_variable(const char* name, size_t length) {
         compiler.had_error = true;
         return;
     }
-    
+
+    int local_idx = resolve_local(var_name);
+    if (local_idx != -1) {
+        emit_byte(OP_LOAD_LOCAL);
+        emit_operand(local_idx);
+        return;
+    }
+
     int const_idx = add_constant(value_obj((Object*)var_name));
     if (const_idx >= 0) {
         emit_byte(OP_LOAD_GLOBAL);
+        emit_operand(const_idx);
+    }
+}
+
+static void compile_variable_name(ObjString* name) {
+    int local_idx = resolve_local(name);
+    if (local_idx != -1) {
+        emit_byte(OP_LOAD_LOCAL);
+        emit_operand(local_idx);
+        return;
+    }
+
+    int const_idx = add_constant(value_obj((Object*)name));
+    if (const_idx >= 0) {
+        emit_byte(OP_LOAD_GLOBAL);
+        emit_operand(const_idx);
+    }
+}
+
+static void compile_store_variable(ObjString* name) {
+    int local_idx = resolve_local(name);
+    if (local_idx != -1) {
+        emit_byte(OP_STORE_LOCAL);
+        emit_operand(local_idx);
+        return;
+    }
+
+    int const_idx = add_constant(value_obj((Object*)name));
+    if (const_idx >= 0) {
+        emit_byte(OP_STORE_GLOBAL);
         emit_operand(const_idx);
     }
 }
@@ -115,7 +179,7 @@ static void compile_attribute(const char* name, size_t length) {
         compiler.had_error = true;
         return;
     }
-    
+
     int const_idx = add_constant(value_obj((Object*)attr_name));
     if (const_idx >= 0) {
         emit_byte(OP_GET_ATTR);
@@ -266,6 +330,13 @@ static void compile_literal(Value val) {
 }
 
 static void compile_variable_load(ObjString* name) {
+    int local_idx = resolve_local(name);
+    if (local_idx != -1) {
+        emit_byte(OP_LOAD_LOCAL);
+        emit_operand(local_idx);
+        return;
+    }
+
     int const_idx = add_constant(value_obj((Object*)name));
     if (const_idx >= 0) {
         emit_byte(OP_LOAD_GLOBAL);
@@ -274,11 +345,36 @@ static void compile_variable_load(ObjString* name) {
 }
 
 static void compile_variable_store(ObjString* name) {
+    int local_idx = resolve_local(name);
+    if (local_idx != -1) {
+        emit_byte(OP_STORE_LOCAL);
+        emit_operand(local_idx);
+        return;
+    }
+
     int const_idx = add_constant(value_obj((Object*)name));
     if (const_idx >= 0) {
         emit_byte(OP_STORE_GLOBAL);
         emit_operand(const_idx);
     }
+}
+
+static ObjFunction* compile_function_stmt(Stmt* stmt) {
+    Compiler previous = compiler;
+    compiler_init();
+    compiler.local_count = 0;
+
+    for (int i = 0; i < stmt->as.func_decl.param_count; i++) {
+        add_local(stmt->as.func_decl.params[i]);
+    }
+
+    compile_stmt(stmt->as.func_decl.body);
+    ObjFunction* func = compiler_finalize();
+
+    Compiler current = compiler;
+    compiler = previous;
+    (void)current;
+    return func;
 }
 
 static void compile_expr(Expr* expr) {
@@ -309,6 +405,28 @@ static void compile_expr(Expr* expr) {
             emit_byte(op);
             break;
         }
+        case EXPR_CALL:
+            for (int i = 0; i < expr->as.call.arg_count; i++) {
+                compile_expr(expr->as.call.arguments[i]);
+            }
+            compile_expr(expr->as.call.callee);
+            compile_call(expr->as.call.arg_count);
+            break;
+        case EXPR_ARRAY:
+            for (int i = 0; i < expr->as.array.count; i++) {
+                compile_expr(expr->as.array.elements[i]);
+            }
+            compile_array(expr->as.array.count);
+            break;
+        case EXPR_INDEX:
+            compile_expr(expr->as.index.object);
+            compile_expr(expr->as.index.index);
+            compile_index();
+            break;
+        case EXPR_ATTR:
+            compile_expr(expr->as.attr.object);
+            compile_attribute(expr->as.attr.name->chars, expr->as.attr.name->length);
+            break;
         default:
             break;
     }
@@ -325,6 +443,51 @@ static void compile_stmt(Stmt* stmt) {
             for (int i = 0; i < stmt->as.block.count; i++) {
                 compile_stmt(stmt->as.block.statements[i]);
             }
+            break;
+        case STMT_FUNC_DECL: {
+            ObjFunction* func = compile_function_stmt(stmt);
+            int const_idx = add_constant(value_obj((Object*)func));
+            if (const_idx >= 0) {
+                emit_byte(OP_LOAD_CONST);
+                emit_operand(const_idx);
+                compile_variable_store(stmt->as.func_decl.name);
+            }
+            break;
+        }
+        case STMT_IF: {
+            compile_expr(stmt->as.if_stmt.condition);
+            int else_jump = emit_jump(OP_JUMP_IF_FALSE);
+            compile_stmt(stmt->as.if_stmt.then_branch);
+            if (stmt->as.if_stmt.else_branch) {
+                int end_jump = emit_jump(OP_JUMP);
+                patch_operand(else_jump, current_offset());
+                compile_stmt(stmt->as.if_stmt.else_branch);
+                patch_operand(end_jump, current_offset());
+            } else {
+                patch_operand(else_jump, current_offset());
+            }
+            break;
+        }
+        case STMT_WHILE: {
+            int loop_start = current_offset();
+            compile_expr(stmt->as.while_stmt.condition);
+            int exit_jump = emit_jump(OP_JUMP_IF_FALSE);
+            compile_stmt(stmt->as.while_stmt.body);
+            compile_loop(loop_start);
+            patch_operand(exit_jump, current_offset());
+            break;
+        }
+        case STMT_RETURN:
+            if (stmt->as.return_expr) {
+                compile_expr(stmt->as.return_expr);
+            } else {
+                emit_byte(OP_NIL);
+            }
+            emit_byte(OP_RETURN);
+            break;
+        case STMT_CLASS_DECL:
+            compile_literal(value_nil());
+            compile_variable_store(stmt->as.class_decl.name);
             break;
         default:
             break;

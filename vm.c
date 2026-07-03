@@ -85,7 +85,11 @@ static Value vm_peek(VM* vm, int distance) {
 static int read_operand(CallFrame* frame) {
     int high = *frame->pc++;
     int low = *frame->pc++;
-    return (high << 8) | low;
+    int operand = (high << 8) | low;
+    if (operand & 0x8000) {
+        operand |= ~0xFFFF;
+    }
+    return operand;
 }
 
 static void vm_runtime_error(const char* format, ...) {
@@ -160,6 +164,80 @@ void vm_execute(VM* vm, ObjFunction* function) {
                 int local_idx = read_operand(frame);
                 Value val = vm_pop(vm);
                 frame->stack_base[local_idx] = val;
+                vm_push(vm, val);
+                break;
+            }
+            case OP_LOAD_GLOBAL: {
+                int const_idx = read_operand(frame);
+                Value key = function->constants[const_idx];
+                if (key.type == VAL_STRING) {
+                    vm_push(vm, dict_get(vm->globals, (ObjString*)key.as.ptr));
+                } else {
+                    vm_push(vm, value_nil());
+                }
+                break;
+            }
+            case OP_STORE_GLOBAL: {
+                int const_idx = read_operand(frame);
+                Value val = vm_pop(vm);
+                Value key = function->constants[const_idx];
+                if (key.type == VAL_STRING) {
+                    dict_set(vm->globals, (ObjString*)key.as.ptr, val);
+                }
+                vm_push(vm, val);
+                break;
+            }
+            case OP_JUMP: {
+                int offset = read_operand(frame);
+                frame->pc += offset;
+                break;
+            }
+            case OP_JUMP_IF_FALSE: {
+                int offset = read_operand(frame);
+                Value condition = vm_pop(vm);
+                if (value_is_falsy(condition)) {
+                    frame->pc += offset;
+                }
+                break;
+            }
+            case OP_LOOP: {
+                int offset = read_operand(frame);
+                frame->pc += offset;
+                break;
+            }
+            case OP_CALL: {
+                int arg_count = read_operand(frame);
+                Value callee = vm_pop(vm);
+                if (callee.type == VAL_FUNCTION) {
+                    ObjFunction* callee_fn = (ObjFunction*)callee.as.ptr;
+                    if (arg_count != callee_fn->arity) {
+                        vm_runtime_error("Expected %d arguments but got %d", callee_fn->arity, arg_count);
+                        return;
+                    }
+                    if (vm->frame_count >= FRAMES_MAX) {
+                        vm_runtime_error("Stack overflow");
+                        return;
+                    }
+                    CallFrame* new_frame = &vm->frames[vm->frame_count++];
+                    new_frame->function = callee_fn;
+                    new_frame->pc = callee_fn->bytecode;
+                    new_frame->stack_base = vm->stack + vm->stack_top - arg_count;
+                    new_frame->local_count = arg_count;
+                    frame = new_frame;
+                } else if (callee.type == VAL_NATIVE_FN) {
+                    ObjNativeFn* native = (ObjNativeFn*)callee.as.ptr;
+                    if (arg_count > vm->stack_top) {
+                        vm_runtime_error("Not enough arguments for native call");
+                        return;
+                    }
+                    Value* argv = &vm->stack[vm->stack_top - arg_count];
+                    Value result = native->function(arg_count, argv);
+                    vm->stack_top -= arg_count;
+                    vm_push(vm, result);
+                } else {
+                    vm_runtime_error("Can only call functions and native functions");
+                    return;
+                }
                 break;
             }
             
