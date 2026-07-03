@@ -153,6 +153,9 @@ typedef enum {
     TOKEN_CLASS,        /* class */
     TOKEN_USE,          /* use (import) */
     TOKEN_CONST,        /* const */
+    TOKEN_TRUE,         /* true */
+    TOKEN_FALSE,        /* false */
+    TOKEN_NIL,          /* nil */
     TOKEN_BREAK,        /* break */
     TOKEN_CONTINUE,     /* continue */
     TOKEN_MATCH,        /* match */
@@ -207,24 +210,61 @@ typedef struct {
     int line;
 } Lexer;
 
+typedef struct Expr Expr;
+typedef struct Stmt Stmt;
+
 /* ==================== AST Node Structures ==================== */
 
 typedef enum {
     EXPR_LITERAL,
     EXPR_VARIABLE,
+    EXPR_ASSIGN,
     EXPR_BINARY,
     EXPR_UNARY,
     EXPR_CALL,
     EXPR_ARRAY,
-    EXPR_DICT,
     EXPR_INDEX,
     EXPR_ATTR,
 } ExprType;
 
-typedef struct Expr {
+struct Expr {
     ExprType type;
-    /* Union for different expression types */
-} Expr;
+    int line;
+    union {
+        Value literal;
+        ObjString* name;
+        struct {
+            Expr* left;
+            Expr* right;
+            TokenType op;
+        } binary;
+        struct {
+            TokenType op;
+            Expr* right;
+        } unary;
+        struct {
+            Expr* callee;
+            Expr** arguments;
+            int arg_count;
+        } call;
+        struct {
+            Expr** elements;
+            int count;
+        } array;
+        struct {
+            Expr* object;
+            Expr* index;
+        } index;
+        struct {
+            Expr* object;
+            ObjString* name;
+        } attr;
+        struct {
+            Expr* target;
+            Expr* value;
+        } assign;
+    } as;
+};
 
 typedef enum {
     STMT_EXPR,
@@ -238,10 +278,41 @@ typedef enum {
     STMT_RETURN,
 } StmtType;
 
-typedef struct Stmt {
+struct Stmt {
     StmtType type;
-    /* Union for different statement types */
-} Stmt;
+    int line;
+    union {
+        Expr* expression;
+        struct {
+            ObjString* name;
+            Expr* initializer;
+        } var_decl;
+        struct {
+            ObjString* name;
+            ObjString** params;
+            int param_count;
+            Stmt* body;
+        } func_decl;
+        struct {
+            Expr* condition;
+            Stmt* then_branch;
+            Stmt* else_branch;
+        } if_stmt;
+        struct {
+            Expr* condition;
+            Stmt* body;
+        } while_stmt;
+        struct {
+            Expr* condition;
+            Stmt* body;
+        } for_stmt;
+        struct {
+            Stmt** statements;
+            int count;
+        } block;
+        Expr* return_expr;
+    } as;
+};
 
 /* ==================== Virtual Machine ==================== */
 
@@ -312,6 +383,9 @@ Token lexer_next_token(Lexer* lexer);
 
 /* Parser */
 Stmt* parse(const char* source);
+
+/* Compiler */
+ObjFunction* compile(Stmt* statements);
 
 /* VM */
 void vm_init(VM* vm);

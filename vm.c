@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <math.h>
 
 /* ==================== VM Implementation ==================== */
 
@@ -81,6 +82,12 @@ static Value vm_peek(VM* vm, int distance) {
     return value_nil();
 }
 
+static int read_operand(CallFrame* frame) {
+    int high = *frame->pc++;
+    int low = *frame->pc++;
+    return (high << 8) | low;
+}
+
 static void vm_runtime_error(const char* format, ...) {
     va_list args;
     va_start(args, format);
@@ -138,19 +145,19 @@ void vm_execute(VM* vm, ObjFunction* function) {
         
         switch (op) {
             case OP_LOAD_CONST: {
-                int const_idx = *frame->pc++;
+                int const_idx = read_operand(frame);
                 vm_push(vm, function->constants[const_idx]);
                 break;
             }
             
             case OP_LOAD_LOCAL: {
-                int local_idx = *frame->pc++;
+                int local_idx = read_operand(frame);
                 vm_push(vm, frame->stack_base[local_idx]);
                 break;
             }
             
             case OP_STORE_LOCAL: {
-                int local_idx = *frame->pc++;
+                int local_idx = read_operand(frame);
                 Value val = vm_pop(vm);
                 frame->stack_base[local_idx] = val;
                 break;
@@ -178,12 +185,36 @@ void vm_execute(VM* vm, ObjFunction* function) {
                     vm_runtime_error("Division by zero");
                     return;
                 }
-                BINARY_OP(/);
+                if (a.type == VAL_INT && b.type == VAL_INT) {
+                    vm_push(vm, value_int(a.as.integer / b.as.integer));
+                } else if ((a.type == VAL_INT || a.type == VAL_FLOAT) &&
+                           (b.type == VAL_INT || b.type == VAL_FLOAT)) {
+                    double da = a.type == VAL_INT ? a.as.integer : a.as.floating;
+                    double db = b.type == VAL_INT ? b.as.integer : b.as.floating;
+                    vm_push(vm, value_float(da / db));
+                }
                 break;
             }
             
             case OP_MODULO: {
-                BINARY_OP(%);
+                Value b = vm_pop(vm);
+                Value a = vm_pop(vm);
+                if (a.type == VAL_INT && b.type == VAL_INT) {
+                    if (b.as.integer == 0) {
+                        vm_runtime_error("Modulo by zero");
+                        return;
+                    }
+                    vm_push(vm, value_int(a.as.integer % b.as.integer));
+                } else if ((a.type == VAL_INT || a.type == VAL_FLOAT) &&
+                           (b.type == VAL_INT || b.type == VAL_FLOAT)) {
+                    double da = a.type == VAL_INT ? a.as.integer : a.as.floating;
+                    double db = b.type == VAL_INT ? b.as.integer : b.as.floating;
+                    if (db == 0.0) {
+                        vm_runtime_error("Modulo by zero");
+                        return;
+                    }
+                    vm_push(vm, value_float(fmod(da, db)));
+                }
                 break;
             }
             
@@ -192,7 +223,6 @@ void vm_execute(VM* vm, ObjFunction* function) {
                 Value a = vm_pop(vm);
                 double da = a.type == VAL_INT ? a.as.integer : a.as.floating;
                 double db = b.type == VAL_INT ? b.as.integer : b.as.floating;
-                #include <math.h>
                 vm_push(vm, value_float(pow(da, db)));
                 break;
             }
@@ -264,7 +294,7 @@ void vm_execute(VM* vm, ObjFunction* function) {
             }
             
             case OP_BUILD_ARRAY: {
-                int count = *frame->pc++;
+                int count = read_operand(frame);
                 ObjArray* arr = array_new();
                 for (int i = 0; i < count; i++) {
                     array_push(arr, vm_pop(vm));
@@ -274,7 +304,7 @@ void vm_execute(VM* vm, ObjFunction* function) {
             }
             
             case OP_BUILD_DICT: {
-                int count = *frame->pc++;
+                int count = read_operand(frame);
                 ObjDict* dict = dict_new();
                 for (int i = 0; i < count; i++) {
                     Value val = vm_pop(vm);
@@ -365,46 +395,51 @@ void vm_execute(VM* vm, ObjFunction* function) {
 /* ==================== Example Program Execution ==================== */
 
 int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <source-file>\n", argv[0]);
+        return 1;
+    }
+
+    FILE* file = fopen(argv[1], "r");
+    if (!file) {
+        fprintf(stderr, "Could not open %s\n", argv[1]);
+        return 1;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    rewind(file);
+
+    char* source = malloc(file_size + 1);
+    if (!source) {
+        fclose(file);
+        fprintf(stderr, "Out of memory\n");
+        return 1;
+    }
+
+    fread(source, 1, file_size, file);
+    source[file_size] = '\0';
+    fclose(file);
+
+    Stmt* program = parse(source);
+    if (!program) {
+        free(source);
+        return 1;
+    }
+
+    ObjFunction* function = compile(program);
+    if (!function) {
+        free(source);
+        return 1;
+    }
+
     VM vm;
     vm_init(&vm);
-    
-    /* Example: Create a simple function */
-    ObjFunction* main_func = malloc(sizeof(ObjFunction));
-    main_func->obj.type = VAL_FUNCTION;
-    main_func->obj.is_marked = false;
-    main_func->obj.next = vm.objects;
-    vm.objects = (Object*)main_func;
-    
-    main_func->name = string_copy("main", 4);
-    main_func->arity = 0;
-    
-    /* Bytecode: push 5, push 3, add, print */
-    int bytecode[] = {
-        OP_LOAD_CONST, 0,    /* Load constant 5 */
-        OP_LOAD_CONST, 1,    /* Load constant 3 */
-        OP_ADD,              /* Add */
-        OP_PRINT,            /* Print result */
-        OP_RETURN
-    };
-    
-    main_func->bytecode = bytecode;
-    main_func->bytecode_len = sizeof(bytecode) / sizeof(bytecode[0]);
-    
-    /* Constants */
-    Value constants[] = {
-        value_int(5),
-        value_int(3)
-    };
-    main_func->constants = constants;
-    main_func->constants_len = 2;
-    
-    /* Execute */
-    printf("Emarald VM Example\n");
-    printf("===================\n");
-    printf("5 + 3 = ");
-    vm_execute(&vm, main_func);
-    
+    vm_execute(&vm, function);
     vm_free(&vm);
-    
+
+    free(source);
+    free(function->name);
+    free(function);
     return 0;
 }

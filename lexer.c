@@ -1,4 +1,6 @@
 #include "interpreter.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -445,6 +447,12 @@ ObjDict* dict_new(void) {
     return dict;
 }
 
+static bool string_equals(ObjString* a, ObjString* b) {
+    if (a == b) return true;
+    if (a->length != b->length || a->hash != b->hash) return false;
+    return memcmp(a->chars, b->chars, a->length) == 0;
+}
+
 static int find_entry(DictEntry* entries, int capacity, 
                       ObjString* key) {
     uint32_t index = key->hash % capacity;
@@ -456,7 +464,7 @@ static int find_entry(DictEntry* entries, int capacity,
             return index;
         }
         
-        if (entry->key == key) {
+        if (string_equals(entry->key, key)) {
             return index;
         }
         

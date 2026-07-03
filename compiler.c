@@ -74,15 +74,6 @@ static void compile_binary_op(OpCode op) {
     emit_byte(op);
 }
 
-/* Compile literal expression */
-static void compile_literal(Value val) {
-    int const_idx = add_constant(val);
-    if (const_idx >= 0) {
-        emit_byte(OP_LOAD_CONST);
-        emit_operand(const_idx);
-    }
-}
-
 /* Compile variable reference */
 static void compile_variable(const char* name, size_t length) {
     ObjString* var_name = string_copy(name, length);
@@ -243,19 +234,114 @@ static ObjFunction* compiler_finalize(void) {
     return func;
 }
 
-/* Compile a complete program from AST (simplified) */
+static void compile_expr(Expr* expr);
+static void compile_stmt(Stmt* stmt);
+
+static OpCode binary_op_code(TokenType op) {
+    switch (op) {
+        case TOKEN_PLUS: return OP_ADD;
+        case TOKEN_MINUS: return OP_SUBTRACT;
+        case TOKEN_STAR: return OP_MULTIPLY;
+        case TOKEN_SLASH: return OP_DIVIDE;
+        case TOKEN_PERCENT: return OP_MODULO;
+        case TOKEN_POWER: return OP_POWER;
+        case TOKEN_EQUAL_EQUAL: return OP_EQUAL;
+        case TOKEN_NOT_EQUAL: return OP_NOT_EQUAL;
+        case TOKEN_LESS: return OP_LESS;
+        case TOKEN_LESS_EQUAL: return OP_LESS_EQUAL;
+        case TOKEN_GREATER: return OP_GREATER;
+        case TOKEN_GREATER_EQUAL: return OP_GREATER_EQUAL;
+        case TOKEN_AND: return OP_AND;
+        case TOKEN_OR: return OP_OR;
+        default: return OP_ADD;
+    }
+}
+
+static void compile_literal(Value val) {
+    int const_idx = add_constant(val);
+    if (const_idx >= 0) {
+        emit_byte(OP_LOAD_CONST);
+        emit_operand(const_idx);
+    }
+}
+
+static void compile_variable_load(ObjString* name) {
+    int const_idx = add_constant(value_obj((Object*)name));
+    if (const_idx >= 0) {
+        emit_byte(OP_LOAD_GLOBAL);
+        emit_operand(const_idx);
+    }
+}
+
+static void compile_variable_store(ObjString* name) {
+    int const_idx = add_constant(value_obj((Object*)name));
+    if (const_idx >= 0) {
+        emit_byte(OP_STORE_GLOBAL);
+        emit_operand(const_idx);
+    }
+}
+
+static void compile_expr(Expr* expr) {
+    if (!expr) return;
+    switch (expr->type) {
+        case EXPR_LITERAL:
+            compile_literal(expr->as.literal);
+            break;
+        case EXPR_VARIABLE:
+            compile_variable_load(expr->as.name);
+            break;
+        case EXPR_ASSIGN:
+            compile_expr(expr->as.assign.value);
+            compile_variable_store(expr->as.assign.target->as.name);
+            break;
+        case EXPR_UNARY:
+            compile_expr(expr->as.unary.right);
+            if (expr->as.unary.op == TOKEN_MINUS) {
+                emit_byte(OP_NEGATE);
+            } else if (expr->as.unary.op == TOKEN_NOT) {
+                emit_byte(OP_NOT);
+            }
+            break;
+        case EXPR_BINARY: {
+            compile_expr(expr->as.binary.left);
+            compile_expr(expr->as.binary.right);
+            OpCode op = binary_op_code(expr->as.binary.op);
+            emit_byte(op);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+static void compile_stmt(Stmt* stmt) {
+    if (!stmt) return;
+    switch (stmt->type) {
+        case STMT_EXPR:
+            compile_expr(stmt->as.expression);
+            emit_byte(OP_POP);
+            break;
+        case STMT_BLOCK:
+            for (int i = 0; i < stmt->as.block.count; i++) {
+                compile_stmt(stmt->as.block.statements[i]);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+/* Compile a complete program from AST */
 ObjFunction* compile(Stmt* statements) {
     compiler_init();
-    
+
     if (!statements) {
         fprintf(stderr, "No statements to compile\n");
         compiler.had_error = true;
         return NULL;
     }
-    
-    /* In a full implementation, recursively compile all statements */
-    /* For now, generate a simple program */
-    
+
+    compile_stmt(statements);
     ObjFunction* func = compiler_finalize();
     return func;
 }
@@ -281,7 +367,7 @@ void compiler_emit_variable_store(const char* name, size_t length) {
         compiler.had_error = true;
         return;
     }
-    
+
     int const_idx = add_constant(value_obj((Object*)var_name));
     if (const_idx >= 0) {
         emit_byte(OP_STORE_GLOBAL);
